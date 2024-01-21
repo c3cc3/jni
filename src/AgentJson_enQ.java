@@ -92,11 +92,8 @@ public class AgentJson_enQ {
         // 헤더에 바디 길이 추가
         byte[] header = ByteBuffer.allocate(4).putInt(requestBytes.length).array();
 
-		byte[] result = concatenateByteArrays(header, requestBytes);
-        // 서버로 헤더와 바디 전송
-        // out.write(header);
-        // out.write(requestBytes);
-		out.write(result);
+        out.write(header);
+        out.write(requestBytes);
         out.flush();
     }
 
@@ -177,17 +174,5 @@ public class AgentJson_enQ {
             System.exit(0);
         }
 		return 1;
-    }
-	private static byte[] concatenateByteArrays(byte[] a, byte[] b) {
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-
-        try {
-            outputStream.write(a);
-            outputStream.write(b);
-        } catch (IOException e) {
-            e.printStackTrace(); // 예외 처리 필요
-        }
-
-        return outputStream.toByteArray();
     }
 }
