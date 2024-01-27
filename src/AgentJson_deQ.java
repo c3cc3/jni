@@ -55,7 +55,7 @@ public class AgentJson_deQ {
 					
 					// 결과 처리
                     int rc = processResponse(dataResponse);
-					if(rc == 1) {
+					if(rc == 1) { // empty-> There is no data.
 						// 재요청 대기
 						try {
 							Thread.sleep(1000);

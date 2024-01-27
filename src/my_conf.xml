@@ -1,6 +1,6 @@
 <configuration>
     <qpath>/umsdata1/enmq</qpath>
-    <qname>GW-REAL-REQ</qname>
+    <qname>TST</qname>
     <qid>0</qid>
 	 <!-- Log level can be one of: TRACE:0, DEBUG:1, INFO:2, ERROR:4 -->
     <log_level>4</log_level>
