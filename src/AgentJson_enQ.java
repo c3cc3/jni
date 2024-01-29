@@ -87,6 +87,7 @@ public class AgentJson_enQ {
         }
 
     }
+	/*
 	private static void sendRequest(OutputStream out, JSONObject requestJson) throws IOException {
 		// 세션 ID를 요청에 추가
         if (sessionId != null) {
@@ -105,7 +106,24 @@ public class AgentJson_enQ {
         out.write(requestBytes);
         out.flush();
     }
+	*/
+	private static void sendRequest(OutputStream out, JSONObject requestJson) throws IOException {
+        if (sessionId != null) {
+            requestJson.put("SESSION_ID", sessionId);
+        }
 
+        byte[] requestBytes = requestJson.toString().getBytes();
+        ByteBuffer buffer = ByteBuffer.allocate(4 + requestBytes.length);
+        buffer.putInt(requestBytes.length);
+        buffer.put(requestBytes);
+
+        out.write(buffer.array());
+        out.flush();
+    }
+
+
+
+	/*
     private static JSONObject receiveResponse(InputStream in) throws IOException {
         // 서버로부터의 응답을 읽기
         byte[] responseHeader = new byte[4];
@@ -118,6 +136,16 @@ public class AgentJson_enQ {
         // JSON 문자열을 JSON 객체로 변환
         return new JSONObject(responseJsonString);
     }
+	*/
+	private static JSONObject receiveResponse(InputStream in) throws IOException {
+        byte[] responseHeader = new byte[4];
+        in.read(responseHeader);
+        int responseBodyLength = ByteBuffer.wrap(responseHeader).getInt();
+        byte[] responseBody = new byte[responseBodyLength];
+        in.read(responseBody);
+        return new JSONObject(new String(responseBody));
+    }
+
 
     private static JSONObject createInitialRequest() {
 		// JSON 객체 생성
