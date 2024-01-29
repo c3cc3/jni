@@ -38,6 +38,9 @@ public class AgentJson_enQ {
              OutputStream out = socket.getOutputStream();
              InputStream in = socket.getInputStream()) {
 
+
+			 socket.setKeepAlive(true);
+
 			// Make a Link and requeue JSON
             sendRequest(out, createInitialRequest());
 
@@ -52,6 +55,11 @@ public class AgentJson_enQ {
 
                 // 이후 데이터 주고받기 작업 반복
 				while(true) {
+					if (socket.isClosed() ) {
+					    System.out.println("연결된 소켓이 닫혔습니다. 프로그램을 종료합니다.");
+						break;
+					}
+
                     // 데이터 만들고, 요청 보내기
                     sendRequest(out, createDataRequest());
 
@@ -92,6 +100,7 @@ public class AgentJson_enQ {
         // 헤더에 바디 길이 추가
         byte[] header = ByteBuffer.allocate(4).putInt(requestBytes.length).array();
 
+        // 서버로 헤더와 바디 전송
         out.write(header);
         out.write(requestBytes);
         out.flush();
@@ -142,7 +151,7 @@ public class AgentJson_enQ {
 		// 현재 날짜와 시간을 가져옴
         LocalDateTime now = LocalDateTime.now();
         // DateTimeFormatter를 사용하여 형식 지정
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmssSSS");
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmms 종료합니다.sSSS");
         // 형식에 맞게 포맷팅
         String formattedDateTime = now.format(formatter);
         System.out.println("현재 날짜와 시간: " + formattedDateTime);
