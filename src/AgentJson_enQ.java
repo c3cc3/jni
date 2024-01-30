@@ -34,6 +34,8 @@ public class AgentJson_enQ {
         // String serverAddress = "172.30.9.25"; // 서버 주소
         // int serverPort = 7777; // 서버 포트
 
+		Integer testCount=0;
+
         try (Socket socket = new Socket(serverAddress, serverPort);
              OutputStream out = socket.getOutputStream();
              InputStream in = socket.getInputStream()) {
@@ -77,6 +79,7 @@ public class AgentJson_enQ {
 							e.printStackTrace();
 						}
 					}
+				    System.out.println(testCount++ + "-th");
                 }
             } else {
                 System.out.println("서버 응답이 실패했습니다.");
@@ -179,7 +182,7 @@ public class AgentJson_enQ {
 		// 현재 날짜와 시간을 가져옴
         LocalDateTime now = LocalDateTime.now();
         // DateTimeFormatter를 사용하여 형식 지정
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmms 종료합니다.sSSS");
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmssSSS");
         // 형식에 맞게 포맷팅
         String formattedDateTime = now.format(formatter);
         System.out.println("현재 날짜와 시간: " + formattedDateTime);
