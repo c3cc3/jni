@@ -198,6 +198,7 @@ JNIEXPORT jint JNICALL Java_com_clang_fq_FileQueueJNI_NativeRead(JNIEnv *env, jo
 
 	obj = g_obj[tid_index];
 	CHECK(obj);
+#if 0
     size_t obj_msglen = obj->h_obj->h->msglen;
     if( obj_msglen > (65536*10) ) {
         buffer_size = obj_msglen+1;
@@ -205,6 +206,10 @@ JNIEXPORT jint JNICALL Java_com_clang_fq_FileQueueJNI_NativeRead(JNIEnv *env, jo
     else {
         buffer_size = 65536*10;
     }
+#else
+        buffer_size = 65536*100;
+#endif
+	
 
 	ptr_buf = 0x00;
 	ptr_buf = calloc(buffer_size, sizeof(unsigned char));
@@ -369,12 +374,16 @@ JNIEXPORT jint JNICALL Java_com_clang_fq_FileQueueJNI_NativeReadXA(JNIEnv *env, 
 	CHECK(obj);
 
     size_t obj_msglen = obj->h_obj->h->msglen;
+#if 0
     if( obj_msglen > (65536*10) ) {
         buffer_size = obj_msglen+1;
     }
     else {
         buffer_size = 65536*10;
     }
+#else
+        buffer_size = 65536*100;
+#endif
 
 	fq_log(obj->l, FQ_LOG_DEBUG, "tid_index=[%d]. queue:[%s][%s]", tid_index, obj->path, obj->qname);
 
