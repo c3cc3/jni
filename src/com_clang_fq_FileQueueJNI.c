@@ -3,6 +3,7 @@
 #include "fq_common.h"
 #include "fqueue.h"
 #include "fq_manage.h"
+#include "shm_queue.h"
 
 #define MAX_FQ_TABLES 100 // This is max-threads
 
@@ -168,6 +169,143 @@ JNIEXPORT jint JNICALL Java_com_clang_fq_FileQueueJNI_NativeOpen(JNIEnv *env, jo
 	return(0);
 }
 
+// Implementation of native method AccessShmQueue() of FileQueueJNI class
+// 
+// JNIEXPORT int JNICALL Java_FileQueueJNI_NativeOpenShm(JNIEnv *env, jobject thisObj) {
+// You should change a method name to package name.
+JNIEXPORT jint JNICALL Java_com_clang_fq_FileQueueJNI_NativeOpenShm(JNIEnv *env, jobject thisObj) 
+{
+	int rc;
+	fqueue_obj_t *obj=NULL;
+	fq_logger_t 	*l = NULL;
+	// Get a reference to this object's class
+	jclass cls = (*env)->GetObjectClass(env, thisObj);
+
+	/**************************************
+	** 0. Bring a tid_index(int) from class member.
+	**************************************/
+	// Use fields of class
+	// Get the Field ID of the instance variables "tid_index"
+	jfieldID fid_tid_index  = (*env)->GetFieldID(env, cls, "tid_index", "I");
+	if( NULL == fid_tid_index ) return (-3);
+
+	jint tid_index  = (*env)->GetIntField(env, thisObj, fid_tid_index);
+	printf("In C, the int(tid_index)  is %d\n", tid_index);
+
+	pthread_mutex_init(&rw_lock[tid_index], NULL);
+
+	obj = g_obj[tid_index];
+
+	/************************************** 
+	** 1. Bring a logname(String) from class member.
+	**************************************/
+	// Use fields of class
+	// Get the Field ID of the instance variables "logname"
+	jfieldID fid_logname = (*env)->GetFieldID(env, cls, "logname", "Ljava/lang/String;");
+	if (NULL == fid_logname) {
+			return(-1);
+	}
+	// Get the object given the Field ID
+	jstring logname = (*env)->GetObjectField(env, thisObj, fid_logname);
+		
+	// Create a C-string with the JNI String
+	const char *cStr_logname = (*env)->GetStringUTFChars(env, logname, NULL);
+	if (NULL == cStr_logname) {
+		return(-2);
+	}
+	printf("In C, the string is %s\n", cStr_logname);
+
+	/**************************************
+	** 2. Bring a loglevel(int) from class member.
+	**************************************/
+	// Use fields of class
+	// Get the Field ID of the instance variables "loglevel"
+	jfieldID fid_loglevel  = (*env)->GetFieldID(env, cls, "loglevel", "I");
+	if( NULL == fid_loglevel ) return (-3);
+
+	jint loglevel  = (*env)->GetIntField(env, thisObj, fid_loglevel);
+	printf("In C, the int  is %d\n", loglevel);
+
+
+	/***************************************
+	** 3. Open logfile
+	***************************************/
+	rc = fq_open_file_logger(&l, cStr_logname, loglevel );
+	if( rc <= 0 ) {
+		return(-4);
+	}
+
+	/************************************** 
+	** 4. Bring a path(String) from class member.
+	**************************************/
+	// Use fields of class
+	// Get the Field ID of the instance variables "path"
+	jfieldID fid_path = (*env)->GetFieldID(env, cls, "path", "Ljava/lang/String;");
+	if (NULL == fid_path) {
+			log_call_process_info(l);
+			return(-5);
+	}
+	// Get the object given the Field ID
+	jstring path = (*env)->GetObjectField(env, thisObj, fid_path);
+		
+	// Create a C-string with the JNI String
+	const char *cStr_path = (*env)->GetStringUTFChars(env, path, NULL);
+	if (NULL == cStr_path) {
+		log_call_process_info(l);
+		return(-6);
+	}
+	printf("In C, the string is %s\n", cStr_path);
+
+	/************************************** 
+	** 5. Bring a qname(String) from class member.
+	**************************************/
+	// Use fields of class
+	// Get the Field ID of the instance variables "qname"
+	jfieldID fid_qname = (*env)->GetFieldID(env, cls, "qname", "Ljava/lang/String;");
+	if (NULL == fid_qname) {
+			log_call_process_info(l);
+			return(-7);
+	}
+	// Get the object given the Field ID
+	jstring qname = (*env)->GetObjectField(env, thisObj, fid_qname);
+		
+	// Create a C-string with the JNI String
+	const char *cStr_qname = (*env)->GetStringUTFChars(env, qname, NULL);
+	if (NULL == cStr_qname) {
+		log_call_process_info(l);
+		return(-8);
+	}
+	printf("In C, the string is %s\n", cStr_qname);
+	
+
+	/***************************************
+	** 6. Open ShmQueue
+	***************************************/
+	if( !obj ) {
+		rc = OpenShmQueue(l, (char *)cStr_path, (char *)cStr_qname, &obj);
+		if( rc != TRUE ) {
+			char run_name[PATH_MAX];
+			pid_t call_pid = getpid();
+			rc = get_exe_for_pid(call_pid, run_name, sizeof(run_name));
+			if( rc > 0 ){
+				log_call_process_info(l);
+			} 
+
+			fq_log(l, FQ_LOG_ERROR, "path=[%s], qname=[%s].", cStr_path, cStr_qname);
+			return(-10);
+		}
+		g_obj[tid_index] = obj;
+		fq_log(l, FQ_LOG_DEBUG, "success path=[%s], qname=[%s] tid_index = [%d].", cStr_path, cStr_qname, tid_index);
+	}
+	else { 
+		log_call_process_info(l);
+		fq_log(l, FQ_LOG_ERROR, "Already opened. After closing, retry.");
+		return(-11);
+	}
+
+	return(0);
+}
+
 JNIEXPORT jint JNICALL Java_com_clang_fq_FileQueueJNI_NativeRead(JNIEnv *env, jobject thisObj) 
 {
 	int rc;
@@ -198,8 +336,8 @@ JNIEXPORT jint JNICALL Java_com_clang_fq_FileQueueJNI_NativeRead(JNIEnv *env, jo
 
 	obj = g_obj[tid_index];
 	CHECK(obj);
-#if 0
     size_t obj_msglen = obj->h_obj->h->msglen;
+#if 0
     if( obj_msglen > (65536*10) ) {
         buffer_size = obj_msglen+1;
     }
@@ -209,7 +347,6 @@ JNIEXPORT jint JNICALL Java_com_clang_fq_FileQueueJNI_NativeRead(JNIEnv *env, jo
 #else
         buffer_size = 65536*100;
 #endif
-	
 
 	ptr_buf = 0x00;
 	ptr_buf = calloc(buffer_size, sizeof(unsigned char));
@@ -373,8 +510,8 @@ JNIEXPORT jint JNICALL Java_com_clang_fq_FileQueueJNI_NativeReadXA(JNIEnv *env, 
 	obj = g_obj[tid_index];
 	CHECK(obj);
 
-    size_t obj_msglen = obj->h_obj->h->msglen;
 #if 0
+    size_t obj_msglen = obj->h_obj->h->msglen;
     if( obj_msglen > (65536*10) ) {
         buffer_size = obj_msglen+1;
     }
@@ -383,6 +520,7 @@ JNIEXPORT jint JNICALL Java_com_clang_fq_FileQueueJNI_NativeReadXA(JNIEnv *env, 
     }
 #else
         buffer_size = 65536*100;
+
 #endif
 
 	fq_log(obj->l, FQ_LOG_DEBUG, "tid_index=[%d]. queue:[%s][%s]", tid_index, obj->path, obj->qname);
@@ -612,9 +750,6 @@ JNIEXPORT jint JNICALL Java_com_clang_fq_FileQueueJNI_NativeCommitXA(JNIEnv *env
 
 	fq_log(obj->l, FQ_LOG_DEBUG, "In C, XA commit success!. seq = [%ld]-th.", seq);
 stop:
-
-	if(cStr) free((void *)cStr); // this is very important. If you don't have this, you will have a memory (RSS) leak.
-
 	pthread_mutex_unlock(&rw_lock[tid_index]);
 	return(rc);
 }
@@ -754,8 +889,6 @@ JNIEXPORT jint JNICALL Java_com_clang_fq_FileQueueJNI_NativeWrite(JNIEnv *env, j
 		(*env)->SetLongField(env, thisObj, fid_out_run_time, out_run_time);
 	}
 stop:
-	(*env)->ReleaseStringUTFChars(env, inJNIStr_data, inCStr_data); // this is very important. If you don't have this you will have a memory (RSS) leak.
-
 	pthread_mutex_unlock(&rw_lock[tid_index]);
 	return(rc);
 }
@@ -785,6 +918,41 @@ JNIEXPORT jint JNICALL Java_com_clang_fq_FileQueueJNI_NativeClose(JNIEnv *env, j
 
 	if( obj ) {
 		CloseFileQueue(l, &obj);
+		obj = NULL;
+	}
+	if(l) {
+		fq_close_file_logger(&l);
+		l = NULL;
+	}
+
+	g_obj[tid_index] = NULL;
+
+	return(1);
+}
+JNIEXPORT jint JNICALL Java_com_clang_fq_FileQueueJNI_NativeCloseShm(JNIEnv *env, jobject thisObj) 
+{
+	fqueue_obj_t *obj=NULL;
+	fq_logger_t *l;
+
+	// Get a reference to this object's class
+	jclass cls = (*env)->GetObjectClass(env, thisObj);
+
+	/**************************************
+	** 0. Bring a tid_index(int) from class member.
+	**************************************/
+	// Use fields of class
+	// Get the Field ID of the instance variables "tid_index"
+	jfieldID fid_tid_index  = (*env)->GetFieldID(env, cls, "tid_index", "I");
+	if( NULL == fid_tid_index ) return (-3);
+
+	jint tid_index  = (*env)->GetIntField(env, thisObj, fid_tid_index);
+	// printf("In C, the int(tid_index)  is %d\n", tid_index);
+
+	obj = g_obj[tid_index];
+	l = obj->l;
+
+	if( obj ) {
+		CloseShmQueue(obj->l, &obj);
 		obj = NULL;
 	}
 	if(l) {
