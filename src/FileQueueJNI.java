@@ -36,12 +36,14 @@ public final class FileQueueJNI {
 	///////////////////////////////////////////////////////////
 	// Declare a instance native method 
 	public native int NativeOpen();
+	public native int NativeOpenShm();
 	public native int NativeRead();
 	public native int NativeWrite(String data);
 	public native int NativeReadXA();
 	public native int NativeCommitXA();
 	public native int NativeCancelXA();
 	public native int NativeClose();
+	public native int NativeCloseShm();
 	public native long NativeGetMsgLength();
 	public native float NativeUsage();
 	public native int NativeMoveFQ(String src_path, String src_qname, String dst_path, String dst_qname);
@@ -77,6 +79,10 @@ public final class FileQueueJNI {
 		int  rc = NativeOpen();
 		return(rc);
 	}
+    public final int open_shm() {
+		int  rc = NativeOpen();
+		return(rc);
+	}
 	public int read() {
 		int  rc = NativeRead();
 		return(rc);
@@ -98,6 +104,10 @@ public final class FileQueueJNI {
 		return(rc);
 	}
 	public int close() { 
+		int  rc = NativeClose();
+		return(rc);
+	}
+	public int close_shm() { 
 		int  rc = NativeClose();
 		return(rc);
 	}
